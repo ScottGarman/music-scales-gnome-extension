@@ -6,6 +6,5 @@
     "48"
   ],
   "version": 1,
-  "url": "",
-  "settings-schema": "org.gnome.shell.extensions.music-scales"
+  "url": "https://github.com/ScottGarman/music-scales-gnome-extension"
 }

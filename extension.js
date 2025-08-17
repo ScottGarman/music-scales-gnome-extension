@@ -49,25 +49,43 @@ const MusicScaleHelper = GObject.registerClass(
 
         // We load/save the current settings to preserve the state of the applet when
         // doing things that reload applets, such as suspend/resume on a laptop.
-        _loadSettings() {
+        async _loadSettings() {
             try {
                 const settingsFile = Gio.File.new_for_path(this._extensionObject.path + '/settings.json');
 
                 if (settingsFile.query_exists(null)) {
-                    const [success, contents] = settingsFile.load_contents(null);
-                    if (success) {
-                        const settings = JSON.parse(new TextDecoder().decode(contents));
-                        this._currentRoot = settings.root || 0;
-                        this._currentScale = settings.scale || 'Major';
-                        return;
-                    }
+                    settingsFile.load_contents_async(null, (source, result) => {
+                        try {
+                            const [success, contents] = source.load_contents_finish(result);
+                            if (success) {
+                                const settings = JSON.parse(new TextDecoder().decode(contents));
+                                this._currentRoot = settings.root || 0;
+                                this._currentScale = settings.scale || 'Major';
+
+                                // Update the menu display if it's already created
+                                if (this._rootMenuItem && this._scaleMenuItem) {
+                                    this._rootMenuItem.label.text = `Root Note: ${ROOT_NOTES[this._currentRoot]}`;
+                                    this._scaleMenuItem.label.text = `Scale: ${this._currentScale}`;
+                                    this._updateKeyboard();
+                                }
+                            }
+                        } catch (e) {
+                            console.log('Music Scale Helper: Error parsing settings file');
+                            this._setDefaults();
+                        }
+                    });
+                    return; // Exit early since we're handling async
                 }
             } catch (e) {
-                // If loading fails, use defaults
                 console.log('Music Scale Helper: Could not load settings, using defaults');
             }
 
-            // Defaults to C Major
+            // Set defaults if file doesn't exist or there's an error
+            this._setDefaults();
+        }
+
+        // Helper method to set default values
+        _setDefaults() {
             this._currentRoot = 0; // C
             this._currentScale = 'Major';
         }
