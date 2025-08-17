@@ -1,0 +1,11 @@
+{
+  "name": "Music Scales",
+  "description": "Applet which displays the notes of a musical scale for quick reference",
+  "uuid": "music-scales@zenlinux.com",
+  "shell-version": [
+    "48"
+  ],
+  "version": 1,
+  "url": "",
+  "settings-schema": "org.gnome.shell.extensions.music-scales"
+}
