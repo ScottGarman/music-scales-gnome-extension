@@ -41,47 +41,53 @@ const MusicScaleHelper = GObject.registerClass(
             });
             this.add_child(this._icon);
 
-            // Load saved settings or use defaults
-            this._loadSettings();
+            // Set defaults first
+            this._setDefaults();
 
-            this._createMenu();
+            // Load settings, then create menu
+            this._loadSettings().then(() => {
+                this._createMenu();
+            });
         }
 
         // We load/save the current settings to preserve the state of the applet when
         // doing things that reload applets, such as suspend/resume on a laptop.
         async _loadSettings() {
-            try {
-                const settingsFile = Gio.File.new_for_path(this._extensionObject.path + '/settings.json');
+            return new Promise((resolve) => {
+                try {
+                    const settingsFile = Gio.File.new_for_path(this._extensionObject.path + '/settings.json');
 
-                if (settingsFile.query_exists(null)) {
-                    settingsFile.load_contents_async(null, (source, result) => {
-                        try {
-                            const [success, contents] = source.load_contents_finish(result);
-                            if (success) {
-                                const settings = JSON.parse(new TextDecoder().decode(contents));
-                                this._currentRoot = settings.root || 0;
-                                this._currentScale = settings.scale || 'Major';
+                    if (settingsFile.query_exists(null)) {
+                        settingsFile.load_contents_async(null, (source, result) => {
+                            try {
+                                const [success, contents] = source.load_contents_finish(result);
+                                if (success) {
+                                    const settings = JSON.parse(new TextDecoder().decode(contents));
+                                    this._currentRoot = settings.root || 0;
+                                    this._currentScale = settings.scale || 'Major';
 
-                                // Update the menu display if it's already created
-                                if (this._rootMenuItem && this._scaleMenuItem) {
-                                    this._rootMenuItem.label.text = `Root Note: ${ROOT_NOTES[this._currentRoot]}`;
-                                    this._scaleMenuItem.label.text = `Scale: ${this._currentScale}`;
-                                    this._updateKeyboard();
+                                    // Update the menu display if it's already created
+                                    if (this._rootMenuItem && this._scaleMenuItem) {
+                                        this._rootMenuItem.label.text = `Root Note: ${ROOT_NOTES[this._currentRoot]}`;
+                                        this._scaleMenuItem.label.text = `Scale: ${this._currentScale}`;
+                                        this._updateKeyboard();
+                                    }
                                 }
+                            } catch (e) {
+                                console.log('Music Scale Helper: Error parsing settings file');
+                                this._setDefaults();
                             }
-                        } catch (e) {
-                            console.log('Music Scale Helper: Error parsing settings file');
-                            this._setDefaults();
-                        }
-                    });
-                    return; // Exit early since we're handling async
+                            resolve();
+                        });
+                        return; // Exit early since we're handling async
+                    }
+                } catch (e) {
+                    console.log('Music Scale Helper: Could not load settings, using defaults');
                 }
-            } catch (e) {
-                console.log('Music Scale Helper: Could not load settings, using defaults');
-            }
 
-            // Set defaults if file doesn't exist or there's an error
-            this._setDefaults();
+                // Always resolve, even if the file doesn't exist or there's an error
+                resolve();
+            });
         }
 
         // Helper method to set default values
@@ -271,6 +277,12 @@ const MusicScaleHelper = GObject.registerClass(
         }
 
         _updateKeyboard() {
+            // Ensure we have valid scale data, or fall back to defaults
+            if (!this._currentScale || !SCALES[this._currentScale]) {
+                console.log('Music Scale Helper: Invalid scale, using default');
+                this._currentScale = 'Major';
+            }
+
             const scaleNotes = SCALES[this._currentScale];
 
             this._keys.forEach((key) => {
