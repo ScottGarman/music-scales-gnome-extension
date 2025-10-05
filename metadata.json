@@ -5,8 +5,9 @@
   "shell-version": [
     "46",
     "47",
-    "48"
+    "48",
+    "49"
   ],
-  "version": 4,
+  "version": 5,
   "url": "https://github.com/ScottGarman/music-scales-gnome-extension"
 }
