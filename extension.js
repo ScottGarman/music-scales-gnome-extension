@@ -179,11 +179,20 @@ const MusicScaleHelper = GObject.registerClass(
         }
 
         _createKeyboard() {
+            // Get scale factor for HiDPI displays
+            const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+
+            // Scaled dimensions
+            const whiteKeyWidth = 38 * scale;
+            const whiteKeyHeight = 80 * scale;
+            const blackKeyWidth = 24 * scale;
+            const blackKeyHeight = 50 * scale;
+
             // Main keyboard container
             this._keyboardContainer = new St.BoxLayout({
                 vertical: false,
                 style_class: 'music-keyboard-container',
-                style: 'padding: 10px; background-color: #f0f0f0; border-radius: 8px;',
+                style: `padding: ${10 * scale}px; background-color: #f0f0f0; border-radius: ${8 * scale}px;`,
             });
 
             // Create piano keys for one octave
@@ -196,24 +205,24 @@ const MusicScaleHelper = GObject.registerClass(
             // Container for relative positioning of keys
             const keyboardLayout = new St.Widget({
                 layout_manager: new Clutter.FixedLayout(),
-                width: 280,
-                height: 80,
+                width: 7 * whiteKeyWidth,
+                height: whiteKeyHeight,
             });
 
             // Create white keys first
             whiteKeys.forEach((semitone, index) => {
                 const key = new St.Button({
-                    style: 'background-color: white; border: 1px solid #ccc; border-radius: 0px 0px 4px 4px;',
-                    width: 38,
-                    height: 80,
-                    x: index * 38,
+                    style: `background-color: white; border: 1px solid #ccc; border-radius: 0px 0px ${4 * scale}px ${4 * scale}px;`,
+                    width: whiteKeyWidth,
+                    height: whiteKeyHeight,
+                    x: index * whiteKeyWidth,
                     y: 0,
                 });
 
                 // Add key label
                 const label = new St.Label({
                     text: whiteKeyNames[index],
-                    style: 'color: #666; font-size: 10px;',
+                    style: `color: #666; font-size: ${10 * scale}px;`,
                     y_align: Clutter.ActorAlign.END,
                     y_expand: false,
                 });
@@ -226,12 +235,20 @@ const MusicScaleHelper = GObject.registerClass(
             });
 
             // Create black keys
-            const blackKeyPositions = [26, 64, 140, 178, 216]; // Positions between white keys
+            // Positions are derived from white key width: C#/D# sit between their white key pairs,
+            // with a gap (no black key) between E and F.
+            const blackKeyPositions = [
+                Math.round(whiteKeyWidth * 0.68),       // C#
+                Math.round(whiteKeyWidth * 1.68),       // D#
+                Math.round(whiteKeyWidth * 3.68),       // F#
+                Math.round(whiteKeyWidth * 4.68),       // G#
+                Math.round(whiteKeyWidth * 5.68),       // A#
+            ];
             blackKeys.forEach((semitone, index) => {
                 const key = new St.Button({
-                    style: 'background-color: #333; border: 1px solid #000; border-radius: 0px 0px 2px 2px;',
-                    width: 24,
-                    height: 50,
+                    style: `background-color: #333; border: 1px solid #000; border-radius: 0px 0px ${2 * scale}px ${2 * scale}px;`,
+                    width: blackKeyWidth,
+                    height: blackKeyHeight,
                     x: blackKeyPositions[index],
                     y: 0,
                 });
@@ -239,7 +256,7 @@ const MusicScaleHelper = GObject.registerClass(
                 // Add key label
                 const label = new St.Label({
                     text: blackKeyNames[index],
-                    style: 'color: white; font-size: 8px;',
+                    style: `color: white; font-size: ${8 * scale}px;`,
                     y_align: Clutter.ActorAlign.END,
                     y_expand: false,
                 });
